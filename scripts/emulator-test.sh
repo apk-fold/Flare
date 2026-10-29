@@ -29,6 +29,7 @@ start() { adb shell am start -n $P/.ui.MainActivity "$@" >/dev/null; }
 shot() { sleep 4; adb exec-out screencap -p > "$OUT/$1.png"; echo "capture $1 : $(wc -c < "$OUT/$1.png") octets"; }
 
 start --ez demo true --ei tab 0
+sleep 6
 shot automations
 start --ei tab 1
 shot shortcuts

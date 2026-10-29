@@ -135,6 +135,7 @@ fun StepPicker(kind: Kind, onDismiss: () -> Unit, onPick: (Def) -> Unit) {
                             ListItem(
                                 headlineContent = { Text(stringResource(def.title)) },
                                 supportingContent = support,
+                                leadingContent = { Icon(stepIcon(def), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.clickable { onPick(def) },
                             )
                         }

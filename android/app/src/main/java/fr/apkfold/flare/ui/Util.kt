@@ -4,7 +4,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.BrightnessMedium
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DoNotDisturbOn
+import androidx.compose.material.icons.filled.FlashlightOn
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Screenshot
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
@@ -23,6 +41,7 @@ import androidx.core.graphics.drawable.toBitmap
 import fr.apkfold.flare.R
 import fr.apkfold.flare.core.Automation
 import fr.apkfold.flare.core.Cat
+import fr.apkfold.flare.core.Def
 import fr.apkfold.flare.core.Defs
 import fr.apkfold.flare.core.Engine
 import fr.apkfold.flare.core.Need
@@ -91,6 +110,32 @@ fun catIcon(c: Cat): ImageVector = when (c) {
     Cat.FLOW -> Icons.Default.Timer
 }
 
+/** Icône propre au type d'étape, sinon celle de sa catégorie. */
+fun stepIcon(def: Def): ImageVector = when (def.type) {
+    "bt_on", "bt_off", "k_bt", "bluetooth" -> Icons.Default.Bluetooth
+    "wifi_on", "wifi_off", "k_wifi", "wifi" -> Icons.Default.Wifi
+    "airplane", "airplane_set" -> Icons.Default.AirplanemodeActive
+    "data" -> Icons.Default.SignalCellularAlt
+    "nfc" -> Icons.Default.Nfc
+    "location", "place_in", "place_out" -> Icons.Default.LocationOn
+    "power_on", "power_off", "battery", "k_battery", "k_charging", "battery_saver" -> Icons.Default.BatteryChargingFull
+    "brightness" -> Icons.Default.BrightnessMedium
+    "dark" -> Icons.Default.DarkMode
+    "flashlight" -> Icons.Default.FlashlightOn
+    "lock", "unlock" -> Icons.Default.Lock
+    "screenshot" -> Icons.Default.Screenshot
+    "dnd", "ringer", "k_ringer" -> Icons.Default.DoNotDisturbOn
+    "notify", "notification", "clear_notifs" -> Icons.Default.Notifications
+    "navigate" -> Icons.Default.Navigation
+    "uri" -> Icons.Default.Link
+    "shell" -> Icons.Default.Terminal
+    "speak" -> Icons.Default.RecordVoiceOver
+    "vibrate" -> Icons.Default.Vibration
+    "sms", "send_sms" -> Icons.Default.Sms
+    "run", "toggle_auto" -> Icons.Default.Bolt
+    else -> catIcon(def.cat)
+}
+
 fun daysSummary(ctx: Context, value: String): String {
     val days = Engine.parseDays(value)
     if (days.size == 7) return ctx.getString(R.string.every_day)
@@ -108,7 +153,14 @@ fun summary(ctx: Context, step: Step): String {
             PType.DAYS -> daysSummary(ctx, v)
             PType.ROUTINE -> Store.get(v)?.name ?: v
             PType.TEXT, PType.MULTILINE -> v.lineSequence().first().let { if (it.length > 40) it.take(40) + "…" else it }
-            PType.NUMBER -> if (p.key == "level") "$v %" else v
+            PType.NUMBER -> when (p.key) {
+                "level" -> "$v %"
+                "seconds" -> "$v s"
+                "minutes" -> "$v min"
+                "ms" -> "$v ms"
+                "radius" -> "$v m"
+                else -> v
+            }
             else -> v
         }
     }.joinToString(" · ")
