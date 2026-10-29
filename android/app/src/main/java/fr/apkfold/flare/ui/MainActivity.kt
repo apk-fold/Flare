@@ -143,6 +143,13 @@ fun FlareRoot(tick: Int, debugTab: Int = -1, debugEdit: Int = 0) {
     }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     val request: (Array<String>) -> Unit = { if (it.isNotEmpty()) launcher.launch(it) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // Premier lancement : la notification du service en a besoin (Android 13+)
+    LaunchedEffect(Unit) {
+        if (!BuildConfig.DEBUG && !fr.apkfold.flare.core.Perms.has(ctx, fr.apkfold.flare.core.Need.NOTIFICATIONS)) {
+            fr.apkfold.flare.core.Perms.runtimeFor(fr.apkfold.flare.core.Need.NOTIFICATIONS)?.let { request(it) }
+        }
+    }
 
     CompositionLocalProvider(LocalTick provides tick, LocalRequestPerms provides request) {
         val e = editing

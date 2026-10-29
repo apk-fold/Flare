@@ -58,7 +58,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.apkfold.flare.R
 import fr.apkfold.flare.core.Automation
+import fr.apkfold.flare.core.Defs
 import fr.apkfold.flare.core.Engine
+import fr.apkfold.flare.core.Perms
 import fr.apkfold.flare.core.Store
 import fr.apkfold.flare.service.FlareService
 import fr.apkfold.flare.service.FlareTile1
@@ -92,13 +94,16 @@ private fun EmptyState(padding: PaddingValues, text: String, action: (@Composabl
 fun AutomationsTab(padding: PaddingValues, onEdit: (Editing) -> Unit) {
     val ctx = LocalContext.current
     val tick = LocalTick.current
+    val request = LocalRequestPerms.current
     val all by Store.items.collectAsState()
     val list = all.filter { !it.isShortcut }
     if (list.isEmpty()) {
         EmptyState(padding, stringResource(R.string.empty_automations)) {
             Button(onClick = {
-                Store.save(Templates.carMode(ctx))
+                val a = Templates.carMode(ctx)
+                Store.save(a)
                 FlareService.start(ctx)
+                request(runtimePermsFor(ctx, a))
             }) { Text(stringResource(R.string.add_example)) }
         }
         return
@@ -137,6 +142,16 @@ fun AutomationsTab(padding: PaddingValues, onEdit: (Editing) -> Unit) {
         }
     }
 }
+
+/** Permissions Android encore à demander pour les étapes d'une automatisation. */
+fun runtimePermsFor(ctx: Context, a: Automation): Array<String> =
+    (listOfNotNull(a.trigger) + a.conditions + a.actions + a.exitActions)
+        .mapNotNull { Defs.get(it.type) }
+        .flatMap { d -> (d.needs + d.anyOf).filter { !Perms.has(ctx, it) } }
+        .flatMap { Perms.runtimeFor(it)?.toList() ?: emptyList() }
+        .filter { it != android.Manifest.permission.ACCESS_BACKGROUND_LOCATION }
+        .distinct()
+        .toTypedArray()
 
 @Composable
 fun MissingLine(ctx: Context, labels: List<Int>) {

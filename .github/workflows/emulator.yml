@@ -2,7 +2,7 @@ name: Test sur émulateur
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
     paths-ignore: ['**.md', 'docs/**', 'i18n/**']
   workflow_dispatch:
 
@@ -47,5 +47,6 @@ jobs:
           git add docs/screenshots/*.png 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "Captures d'écran (émulateur)"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
