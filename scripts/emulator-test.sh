@@ -12,6 +12,9 @@ adb wait-for-device
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
+# Les fenêtres « … ne répond pas » du lanceur de l'émulateur masqueraient les captures
+adb shell settings put global hide_error_dialogs 1
+adb shell settings put secure anr_show_background 0
 adb install -r -g "$APK" || { echo "::error title=Installation::échec de adb install"; exit 1; }
 
 adb shell pm grant $P android.permission.WRITE_SECURE_SETTINGS
@@ -26,7 +29,13 @@ adb shell cmd uimode night no
 adb logcat -c
 
 start() { adb shell am start -n $P/.ui.MainActivity "$@" >/dev/null; }
-shot() { sleep 4; adb exec-out screencap -p > "$OUT/$1.png"; echo "capture $1 : $(wc -c < "$OUT/$1.png") octets"; }
+shot() {
+  sleep 4
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1
+  sleep 1
+  adb exec-out screencap -p > "$OUT/$1.png"
+  echo "capture $1 : $(wc -c < "$OUT/$1.png") octets"
+}
 
 start --ez demo true --ei tab 0
 sleep 6
