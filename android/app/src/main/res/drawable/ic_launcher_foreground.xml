@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône Flare : une fusée de signalisation qui s'allume (étincelle orange) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- halo -->
+    <path
+        android:fillColor="#33FF7A2E"
+        android:pathData="M52,54m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+    <!-- grande étincelle -->
+    <path android:pathData="M52,30 C53.6,46 57,50.4 76,54 C57,57.6 53.6,62 52,78 C50.4,62 47,57.6 28,54 C47,50.4 50.4,46 52,30 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="52" android:startY="30"
+                android:endX="52" android:endY="78"
+                android:startColor="#FFE08A"
+                android:endColor="#FF4D1A" />
+        </aapt:attr>
+    </path>
+    <!-- petite étincelle -->
+    <path
+        android:fillColor="#FFFFC56B"
+        android:pathData="M71,33 C71.5,37.5 72.6,38.6 77,39 C72.6,39.4 71.5,40.5 71,45 C70.5,40.5 69.4,39.4 65,39 C69.4,38.6 70.5,37.5 71,33 Z" />
+</vector>

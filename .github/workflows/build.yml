@@ -1,0 +1,88 @@
+name: Compilation
+
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  traductions:
+    name: Traductions (23 langues)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toutes les clés présentes et fichiers Android à jour
+        run: scripts/ci-run.sh "Traductions" python3 scripts/i18n.py --check
+
+  android:
+    name: APK Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilation de l'APK
+        working-directory: android
+        env:
+          FLARE_KEYSTORE_PASSWORD: ${{ secrets.FLARE_KEYSTORE_PASSWORD }}
+          FLARE_KEY_PASSWORD: ${{ secrets.FLARE_KEY_PASSWORD }}
+          FLARE_KEY_ALIAS: ${{ secrets.FLARE_KEY_ALIAS }}
+        run: |
+          if [ -n "${{ secrets.FLARE_KEYSTORE_B64 }}" ]; then
+            echo "${{ secrets.FLARE_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/flare.jks"
+            export FLARE_KEYSTORE_FILE="$RUNNER_TEMP/flare.jks"
+          fi
+          ../scripts/ci-run.sh "Gradle" ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../Flare.apk
+      - name: Vérification de l'APK
+        run: |
+          ls -la Flare.apk
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs Flare.apk | head -5
+          "$BT/aapt2" dump badging Flare.apk | grep -E "^(package|sdkVersion|targetSdkVersion|application-label:|locales)" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: Flare.apk
+
+  release:
+    name: Publication
+    needs: [traductions, android]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: dist
+      - name: Publier la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          V=$(cat VERSION | tr -d '[:space:]')
+          TAG="v$V"
+          cd dist && sha256sum * > SHA256SUMS.txt && cd ..
+          NOTES="Flare $V — compilation n°${{ github.run_number }} ($(git rev-parse --short HEAD)).
+
+          - **Android** : Flare.apk (Android 8 ou plus récent)
+
+          Empreinte SHA-256 dans SHA256SUMS.txt."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --notes "$NOTES" --latest
+          else
+            gh release create "$TAG" dist/* --title "Flare $V" --notes "$NOTES" --latest
+          fi

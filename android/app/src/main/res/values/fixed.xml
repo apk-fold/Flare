@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes identiques dans toutes les langues -->
+<resources>
+    <string name="tile_1" translatable="false">Flare 1</string>
+    <string name="tile_2" translatable="false">Flare 2</string>
+    <string name="tile_3" translatable="false">Flare 3</string>
+</resources>

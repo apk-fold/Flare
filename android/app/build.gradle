@@ -1,0 +1,86 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+// Numéro de version unique, lu dans le fichier VERSION à la racine du dépôt
+def appVersion = rootProject.file('../VERSION').text.trim()
+def parts = appVersion.tokenize('.').collect { it.toInteger() }
+def code = parts[0] * 10000 + parts[1] * 100 + parts[2]
+
+// Signature : clé du dépôt (signing/flare.jks) ou secrets GitHub si présents
+def ksPath = System.getenv('FLARE_KEYSTORE_FILE') ?: rootProject.file('../signing/flare.jks').absolutePath
+
+android {
+    namespace 'fr.apkfold.flare'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'fr.apkfold.flare'
+        minSdk 26
+        targetSdk 35
+        versionCode code
+        versionName appVersion
+    }
+
+    signingConfigs {
+        flare {
+            storeFile file(ksPath)
+            storePassword System.getenv('FLARE_KEYSTORE_PASSWORD') ?: 'flare-apk-fold'
+            keyAlias System.getenv('FLARE_KEY_ALIAS') ?: 'flare'
+            keyPassword System.getenv('FLARE_KEY_PASSWORD') ?: 'flare-apk-fold'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.flare
+        }
+        debug {
+            signingConfig signingConfigs.flare
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
+
+    packaging {
+        resources {
+            excludes += ['META-INF/versions/**', 'META-INF/*.kotlin_module', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES']
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+dependencies {
+    implementation platform('androidx.compose:compose-bom:2025.06.00')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+}
