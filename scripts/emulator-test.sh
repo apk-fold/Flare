@@ -44,6 +44,9 @@ sleep 3
 adb shell dumpsys battery set ac 1
 sleep 5
 adb shell dumpsys battery reset
+# Le moteur a-t-il réagi ? (notification « Chargeur branché » publiée par l'action)
+NOTIF=$(adb shell dumpsys notification --noredact | grep -c "android.title=String (Flare)" || true)
+echo "::notice title=Moteur::notifications Flare publiées pendant le test : $NOTIF"
 start --ei tab 2
 shot log
 start --ei tab 3
@@ -54,29 +57,32 @@ sleep 2
 start --ei tab 0
 shot automations-dark
 
-# Interface en français puis en arabe (affichage de droite à gauche)
+# Interface en français (données recréées dans la langue) puis en arabe (droite à gauche)
 adb shell cmd uimode night no
 adb shell cmd locale set-app-locales $P --locales fr-FR
 adb shell am force-stop $P
-start --ei tab 0
-sleep 4
+start --ez reset true --ez demo true --ei tab 0
+sleep 6
 shot fr-automations
 start --ez edit_first true
 shot fr-editor
+start --ez run_first_shortcut true --ei tab 2
+sleep 3
+adb shell dumpsys battery unplug
+sleep 3
+adb shell dumpsys battery set ac 1
+sleep 5
+adb shell dumpsys battery reset
 start --ei tab 2
 shot fr-log
 start --ei tab 3
 shot fr-rights
 adb shell cmd locale set-app-locales $P --locales ar
 adb shell am force-stop $P
-start --ei tab 0
-sleep 4
+start --ez reset true --ez demo true --ei tab 0
+sleep 6
 shot ar-automations
 adb shell cmd locale set-app-locales $P --locales en-US
-
-# Le moteur a-t-il réagi au chargeur ? (notification « Chargeur branché » publiée par l'action)
-NOTIF=$(adb shell dumpsys notification --noredact | grep -c "android.title=String (Flare)" || true)
-echo "::notice title=Moteur::notifications Flare publiées pendant le test : $NOTIF"
 
 SVC=$(adb shell dumpsys activity services $P | grep -c "FlareService" || true)
 echo "::notice title=Service::FlareService présent : $SVC"

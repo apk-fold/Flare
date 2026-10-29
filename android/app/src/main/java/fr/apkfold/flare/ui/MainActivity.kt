@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDebug(i: Intent?) {
         if (!BuildConfig.DEBUG || i == null) return
+        if (i.getBooleanExtra("reset", false)) Store.clearAll()
         if (i.getBooleanExtra("demo", false) && Store.items.value.isEmpty()) {
             Store.save(Templates.carMode(this))
             Store.save(

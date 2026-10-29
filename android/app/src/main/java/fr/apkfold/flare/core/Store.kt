@@ -96,6 +96,15 @@ object Store {
         }
     }
 
+    /** Efface automatisations, raccourcis, journal et état (tests sur émulateur). */
+    @Synchronized
+    fun clearAll() {
+        _items.value = emptyList()
+        persist()
+        clearLog()
+        prefs.edit().remove("active").apply()
+    }
+
     // ---- Journal ----
 
     @Synchronized

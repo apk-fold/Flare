@@ -50,7 +50,7 @@ jobs:
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           echo "::notice title=APK::$(stat -c %s Flare.apk) octets"
           "$BT/apksigner" verify --print-certs Flare.apk | head -3 | while read -r l; do echo "::notice title=Signature::$l"; done
-          "$BT/aapt2" dump badging Flare.apk | grep -E "^(package|sdkVersion|targetSdkVersion|locales)" | while read -r l; do echo "::notice title=Paquet::${l:0:900}"; done
+          "$BT/aapt2" dump badging Flare.apk | grep -E "^(package|sdkVersion|targetSdkVersion|uses-permission: name='android.permission.INTERNET')" | while read -r l; do echo "::notice title=Paquet::${l:0:900}"; done
       - uses: actions/upload-artifact@v4
         with:
           name: android
