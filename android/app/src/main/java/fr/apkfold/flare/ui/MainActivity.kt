@@ -1,5 +1,6 @@
 package fr.apkfold.flare.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import fr.apkfold.flare.BuildConfig
 import fr.apkfold.flare.R
+import fr.apkfold.flare.core.Engine
+import fr.apkfold.flare.core.Step
 import fr.apkfold.flare.core.Automation
 import fr.apkfold.flare.core.Store
 import fr.apkfold.flare.service.FlareService
@@ -47,6 +52,10 @@ class MainActivity : ComponentActivity() {
     private val binderListener = Shizuku.OnBinderReceivedListener { tick.intValue++ }
     private val deadListener = Shizuku.OnBinderDeadListener { tick.intValue++ }
 
+    /** Commandes de test (version de développement seulement) : onglet, exemple, éditeur, lancement. */
+    private val debugTab = mutableIntStateOf(-1)
+    private val debugEdit = mutableIntStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -58,7 +67,43 @@ class MainActivity : ComponentActivity() {
         } catch (_: Throwable) {
         }
         FlareService.start(this)
-        setContent { FlareTheme { FlareRoot(tick.intValue) } }
+        handleDebug(intent)
+        setContent { FlareTheme { FlareRoot(tick.intValue, debugTab.intValue, debugEdit.intValue) } }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDebug(intent)
+    }
+
+    private fun handleDebug(i: Intent?) {
+        if (!BuildConfig.DEBUG || i == null) return
+        if (i.getBooleanExtra("demo", false) && Store.items.value.isEmpty()) {
+            Store.save(Templates.carMode(this))
+            Store.save(
+                Automation(
+                    name = "Test",
+                    actions = listOf(
+                        Step("notify", mapOf("title" to "Flare", "text" to "Test")),
+                        Step("vibrate", mapOf("ms" to "200")),
+                        Step("volume", mapOf("stream" to "media", "level" to "40")),
+                        Step("wait", mapOf("seconds" to "1")),
+                    ),
+                ),
+            )
+            Store.save(
+                Automation(
+                    name = getString(R.string.t_power_on),
+                    trigger = Step("power_on"),
+                    actions = listOf(Step("notify", mapOf("title" to "Flare", "text" to getString(R.string.t_power_on)))),
+                ),
+            )
+        }
+        if (i.hasExtra("tab")) debugTab.intValue = i.getIntExtra("tab", 0)
+        if (i.getBooleanExtra("edit_first", false)) debugEdit.intValue++
+        if (i.getBooleanExtra("run_first_shortcut", false)) {
+            Store.items.value.firstOrNull { it.isShortcut }?.let { Engine.runManual(this, it) }
+        }
     }
 
     override fun onResume() {
@@ -81,9 +126,20 @@ class MainActivity : ComponentActivity() {
 data class Editing(val item: Automation, val isNew: Boolean, val shortcut: Boolean)
 
 @Composable
-fun FlareRoot(tick: Int) {
+fun FlareRoot(tick: Int, debugTab: Int = -1, debugEdit: Int = 0) {
     var editing by remember { mutableStateOf<Editing?>(null) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(debugTab, tick) {
+        if (debugTab in 0..3) {
+            tab = debugTab
+            editing = null
+        }
+    }
+    LaunchedEffect(debugEdit) {
+        if (debugEdit > 0) {
+            Store.items.value.firstOrNull { !it.isShortcut }?.let { editing = Editing(it, isNew = false, shortcut = false) }
+        }
+    }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     val request: (Array<String>) -> Unit = { if (it.isNotEmpty()) launcher.launch(it) }
 
