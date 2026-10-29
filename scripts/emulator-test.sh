@@ -54,6 +54,26 @@ sleep 2
 start --ei tab 0
 shot automations-dark
 
+# Interface en français puis en arabe (affichage de droite à gauche)
+adb shell cmd uimode night no
+adb shell cmd locale set-app-locales $P --locales fr-FR
+adb shell am force-stop $P
+start --ei tab 0
+sleep 4
+shot fr-automations
+start --ez edit_first true
+shot fr-editor
+start --ei tab 2
+shot fr-log
+start --ei tab 3
+shot fr-rights
+adb shell cmd locale set-app-locales $P --locales ar
+adb shell am force-stop $P
+start --ei tab 0
+sleep 4
+shot ar-automations
+adb shell cmd locale set-app-locales $P --locales en-US
+
 # Le moteur a-t-il réagi au chargeur ? (notification « Chargeur branché » publiée par l'action)
 NOTIF=$(adb shell dumpsys notification --noredact | grep -c "android.title=String (Flare)" || true)
 echo "::notice title=Moteur::notifications Flare publiées pendant le test : $NOTIF"
